@@ -1,0 +1,38 @@
+services:
+  api:
+    build: ./api
+    ports: ["8000:8000"]
+    environment:
+      FIREHOSE_STREAM: hp-retail-ventas
+      AWS_PROFILE: ${AWS_PROFILE:-curso}            # perfil de ~/.aws; por defecto el del curso
+      AWS_REGION: eu-west-1                       # sin región, boto3 no crea el cliente
+      AWS_SHARED_CREDENTIALS_FILE: /aws/credentials
+      AWS_CONFIG_FILE: /aws/config                # necesario para perfiles con SSO o región
+    volumes: ["~/.aws:/aws:ro"]
+    # Alternativa (Linux con usuario distinto de 1000, o SSO que no funcione):
+    # genera .env con `aws configure export-credentials --profile curso --format env-no-export`,
+    # comenta AWS_PROFILE y descomenta la línea siguiente. Ver README.
+    # env_file: .env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  generador:
+    build:
+      context: ..                                 # raíz del repositorio, para copiar comun/
+      dockerfile: demo1-ingesta/generador/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_URL: http://api:8000
+      EVENTOS_POR_SEGUNDO: "1"
+      MODO: ${MODO:-normal}                       # MODO=pico docker compose up ... -> x10
+      DURACION_MIN: ${DURACION_MIN:-10}
+      TAM_LOTE: "25"
+      DUPLICADOS_PCT: ${DUPLICADOS_PCT:-0}
+      INVALIDOS_PCT: ${INVALIDOS_PCT:-0}
+    volumes: ["./salida:/app/salida"]

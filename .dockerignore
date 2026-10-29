@@ -1,0 +1,6 @@
+# Contexto de construcción del generador (raíz del repositorio): solo lo necesario
+*
+!comun/
+!demo1-ingesta/generador/
+**/__pycache__
+**/tests

@@ -1,0 +1,7 @@
+# Desarrollo: tests y linter. Incluye las dependencias de la API y del generador.
+-r requirements.txt
+-r demo1-ingesta/api/requirements.txt
+-r demo1-ingesta/generador/requirements.txt
+pytest==9.2.0
+moto[firehose,s3]==5.2.5
+ruff==0.17.3

@@ -1,0 +1,25 @@
+# Secretos y credenciales
+.env
+*.env
+!.env.ejemplo
+
+# Terraform: el estado local contiene contraseñas (demo 2) y no se sube
+*.tfstate*
+.terraform/
+*.tfplan
+# Valores personales (email, perfil, IP): se parte de terraform.tfvars.ejemplo
+terraform.tfvars
+crash.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Salidas de las demos
+salida/
+
+# Sistema
+.DS_Store

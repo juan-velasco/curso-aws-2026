@@ -1,0 +1,17 @@
+# Configuración de las herramientas de desarrollo (no es un paquete instalable)
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+pythonpath = [".", "demo1-ingesta/api", "demo1-ingesta/generador"]
+testpaths = ["demo1-ingesta/api/tests", "demo1-ingesta/generador/tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B905"]  # zip() sin strict= aparece así en el código de las diapositivas
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "comun", "generador"]

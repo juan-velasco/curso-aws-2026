@@ -1,0 +1,5 @@
+# Copia este fichero como terraform.tfvars y ajusta los valores
+email_alertas = "tu.email@ejemplo.com"
+# perfil        = "curso"
+# region        = "eu-west-1"
+# sufijo_bucket = ""   # vacío = ID de la cuenta

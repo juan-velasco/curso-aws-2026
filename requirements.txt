@@ -1,0 +1,5 @@
+# Dependencias de los scripts de apoyo que se ejecutan en el portátil
+# (comprobar_bronze.py, cargar_semilla.py, tarea_dms.py, comprobar_cdc.py...)
+boto3==1.43.120
+psycopg[binary]==3.3.6
+pyarrow==26.0.0

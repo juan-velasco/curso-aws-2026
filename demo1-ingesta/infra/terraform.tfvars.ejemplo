@@ -1,0 +1,3 @@
+# Copia este fichero como terraform.tfvars si quieres aviso por email de la alarma
+# email_alertas = "tu.email@ejemplo.com"
+# perfil        = "curso"

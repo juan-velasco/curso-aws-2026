@@ -1,0 +1,4 @@
+# Copia este fichero como terraform.tfvars si necesitas cambiar algo
+# mi_ip           = "203.0.113.10"   # vacío = detección automática (checkip.amazonaws.com)
+# crear_roles_dms = false            # si dms-vpc-role y dms-cloudwatch-logs-role ya existen
+# perfil          = "curso"
