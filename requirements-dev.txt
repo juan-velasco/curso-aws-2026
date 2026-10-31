@@ -5,3 +5,7 @@
 pytest==9.2.0
 moto[firehose,s3]==5.2.5
 ruff==0.17.3
+# PySpark de Glue 5.0 (Spark 3.5.4), para los tests de demo4-pipeline/glue. Necesita Java 8, 11 o 17.
+# setuptools aporta distutils, que Spark 3.5 usa y Python 3.12 ya no incluye.
+pyspark==3.5.4
+setuptools==84.2.1

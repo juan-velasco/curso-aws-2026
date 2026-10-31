@@ -1,0 +1,8 @@
+# Copia este fichero como terraform.tfvars (no se sube a git)
+email_alertas = "tu.email@ejemplo.com"
+# perfil = "curso"
+# clase_ejecucion_glue = "FLEX"
+# programacion_activa = false
+# Después de suscribirte a QuickSight:
+# quicksight_activo = true
+# quicksight_usuario_arn = "arn:aws:quicksight:eu-west-1:<ID de cuenta>:user/default/<usuario>"

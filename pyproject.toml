@@ -2,8 +2,8 @@
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
-pythonpath = [".", "demo1-ingesta/api", "demo1-ingesta/generador"]
-testpaths = ["demo1-ingesta/api/tests", "demo1-ingesta/generador/tests"]
+pythonpath = [".", "demo1-ingesta/api", "demo1-ingesta/generador", "demo1-ingesta/scripts", "demo4-pipeline/glue", "demo4-pipeline/scripts"]
+testpaths = ["comun/tests", "demo1-ingesta/api/tests", "demo1-ingesta/generador/tests", "demo1-ingesta/scripts/tests", "demo4-pipeline/glue/tests", "demo4-pipeline/scripts/tests", "demo4-pipeline/stepfunctions/tests"]
 
 [tool.ruff]
 target-version = "py312"
@@ -14,4 +14,4 @@ select = ["E", "F", "W", "I", "B", "UP"]
 ignore = ["B905"]  # zip() sin strict= aparece así en el código de las diapositivas
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "comun", "generador"]
+known-first-party = ["app", "backfill_ventas", "cargar_referencia", "comun", "generador", "transformaciones"]

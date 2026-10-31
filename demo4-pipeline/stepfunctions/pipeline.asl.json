@@ -1,0 +1,193 @@
+{
+  "Comment": "Pipeline de bronze a gold",
+  "StartAt": "Preparar",
+  "States": {
+    "Preparar": {
+      "Type": "Pass",
+      "Comment": "forzar_fallo es opcional en la entrada: por defecto, false",
+      "Parameters": {
+        "opciones.$": "States.JsonMerge(States.StringToJson('{\"forzar_fallo\": \"false\"}'), $$.Execution.Input, false)"
+      },
+      "Next": "SilverEnParalelo"
+    },
+    "SilverEnParalelo": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "JobVentas",
+          "States": {
+            "JobVentas": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "${job_ventas}",
+                "Arguments": { "--FORZAR_FALLO.$": "$.opciones.forzar_fallo" }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "JobMaestros",
+          "States": {
+            "JobMaestros": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "${job_maestros}",
+                "Arguments": { "--FORZAR_FALLO.$": "$.opciones.forzar_fallo" }
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultPath": null,
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotificarFallo"
+        }
+      ],
+      "Next": "LeerCalidad"
+    },
+    "LeerCalidad": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:getObject",
+      "Parameters": {
+        "Bucket": "${bucket}",
+        "Key": "${clave_control}"
+      },
+      "ResultSelector": {
+        "control.$": "States.StringToJson($.Body)"
+      },
+      "ResultPath": "$.calidad",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotificarFallo"
+        }
+      ],
+      "Next": "CalidadOK"
+    },
+    "CalidadOK": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.calidad.control.filas_leidas",
+          "NumericEquals": 0,
+          "Next": "SinDatos"
+        },
+        {
+          "Variable": "$.calidad.control.pct_cuarentena",
+          "NumericGreaterThan": 5,
+          "Next": "NotificarFallo"
+        }
+      ],
+      "Default": "CargarGold"
+    },
+    "SinDatos": {
+      "Type": "Succeed",
+      "Comment": "Sin ficheros nuevos no es un fallo: el generador puede estar parado"
+    },
+    "CargarGold": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:redshiftdata:executeStatement",
+      "Parameters": {
+        "WorkgroupName": "${workgroup}",
+        "Database": "dev",
+        "Sql": "CALL gold.sp_cargar_gold((current_date-1)::TIMESTAMP, (current_date+1)::TIMESTAMP)"
+      },
+      "ResultPath": "$.gold",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotificarFallo"
+        }
+      ],
+      "Next": "EsperarGold"
+    },
+    "EsperarGold": {
+      "Type": "Wait",
+      "Seconds": 15,
+      "Next": "EstadoGold"
+    },
+    "EstadoGold": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:redshiftdata:describeStatement",
+      "Parameters": { "Id.$": "$.gold.Id" },
+      "ResultPath": "$.estado_gold",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotificarFallo"
+        }
+      ],
+      "Next": "GoldTerminado"
+    },
+    "GoldTerminado": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.estado_gold.Status",
+          "StringEquals": "FINISHED",
+          "Next": "RefrescarSPICE"
+        },
+        {
+          "Or": [
+            { "Variable": "$.estado_gold.Status", "StringEquals": "FAILED" },
+            { "Variable": "$.estado_gold.Status", "StringEquals": "ABORTED" }
+          ],
+          "Next": "NotificarFallo"
+        }
+      ],
+      "Default": "EsperarGold"
+    },
+    "RefrescarSPICE": ${refrescar_spice},
+    "NotificarOK": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${tema_sns}",
+        "Subject": "Pipeline del curso: correcto",
+        "Message.$": "States.Format('Ejecución {} correcta. Filas leídas: {}. Filas OK: {}. En cuarentena: {}.', $$.Execution.Name, $.calidad.control.filas_leidas, $.calidad.control.filas_ok, $.calidad.control.filas_cuarentena)"
+      },
+      "End": true
+    },
+    "NotificarFallo": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${tema_sns}",
+        "Subject": "Pipeline del curso: FALLO",
+        "Message.$": "States.Format('La ejecución {} ha fallado o no ha pasado la calidad. Revísala en Step Functions.', $$.Execution.Name)"
+      },
+      "Next": "Fallido"
+    },
+    "Fallido": {
+      "Type": "Fail",
+      "Error": "PipelineFallido",
+      "Cause": "Ver el estado anterior a NotificarFallo en el historial de la ejecución"
+    }
+  }
+}

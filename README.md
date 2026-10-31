@@ -1,13 +1,16 @@
-# Curso AWS para HP · Sesión 1: ingesta hacia bronze
+# Curso AWS para HP · Sesiones 1 y 2: del TPV al dashboard
 
-Código de las demos de la sesión 1 del curso de AWS (12 h, 3 sesiones) que imparte el ITI para HP. El hilo conductor es un **retail de moda global** cuyas ventas alimentan un lago de datos en S3 con arquitectura medallón (bronze, silver, gold).
+Código de las demos de las sesiones 1 y 2 del curso de AWS (12 h, 3 sesiones) que imparte el ITI para HP. El hilo conductor es un **retail de moda global** cuyas ventas alimentan un lago de datos en S3 con arquitectura medallón (bronze, silver, gold).
 
 | Demo | Qué enseña | Flujo |
 |---|---|---|
 | [Demo 1 · Del TPV a bronze](demo1-ingesta/GUION.md) | Ingesta en streaming de las ventas | Generador → API REST (FastAPI en Docker) → Amazon Data Firehose → S3 `bronze/ventas/` |
 | [Demo 2 · CDC con DMS](demo2-cdc-dms/GUION.md) | Captura de cambios de clientes y productos | RDS PostgreSQL → AWS DMS (Full load + CDC) → S3 `bronze/cdc/` |
+| [Demo 3 · Catálogo y Athena](demo3-catalogo-athena/GUION.md) | Glue Data Catalog, partition projection, coste por datos escaneados | S3 `bronze/` → Glue Data Catalog → Athena |
+| [Demo 4 · Pipeline de punta a punta](demo4-pipeline/GUION.md) | Glue Jobs, Iceberg, SCD2, Data Quality, ELT, orquestación y dashboard | bronze → silver (Iceberg) → gold (Redshift Serverless) → QuickSight, con Step Functions |
+| [Lake Formation](demo4-pipeline/GUION_LAKE_FORMATION.md) | LF-Tags y filtros de filas y columnas. **Solo el profesor, en una cuenta de pruebas** | Roles con *opt-in* en modo híbrido sobre `silver/` |
 
-Las sesiones 2 y 3 reutilizan este repositorio (Glue, Athena, Redshift, ECS con Fargate, SageMaker).
+La sesión 3 reutiliza este repositorio (ECS con Fargate, SageMaker). Las diferencias con las diapositivas están en [CAMBIOS_DIAPOSITIVAS.md](CAMBIOS_DIAPOSITIVAS.md).
 
 ## Requisitos
 
@@ -37,20 +40,38 @@ Todos los scripts de apoyo están en Python para que funcionen igual en Windows,
 ## Estructura
 
 ```
-├── comun/maestros.py         # datos maestros deterministas: 21 tiendas + 5 online, 4.000 clientes, 1.200 productos
+├── comun/
+│   ├── maestros.py           # datos maestros deterministas: 21 tiendas + 5 online, 4.000 clientes, 1.200 productos
+│   ├── eventos.py            # construcción de eventos: generador y backfill
+│   ├── referencia.py         # tipos de cambio y calendario
+│   ├── athena.py, redshift.py, terraform.py   # utilidades de los scripts
 ├── infra/base/               # Terraform: bucket del lago + AWS Budgets (se mantiene entre sesiones)
 ├── demo1-ingesta/
 │   ├── infra/                # Terraform: Firehose, IAM, alarma de DataFreshness
 │   ├── api/                  # FastAPI + Dockerfile + tests
 │   ├── generador/            # generador de ventas + Dockerfile + tests
 │   ├── docker-compose.yml
-│   ├── scripts/              # comprobar_bronze.py, evento_invalido.py
+│   ├── scripts/              # comprobar_bronze.py, evento_invalido.py, backfill_ventas.py
 │   └── GUION.md
-└── demo2-cdc-dms/
-    ├── infra/                # Terraform: VPC, RDS, Secrets Manager, DMS
-    ├── sql/                  # esquema, usuario DMS, cambios de la demo
-    ├── scripts/              # cargar_semilla.py, tarea_dms.py, aplicar_cambios.py, comprobar_cdc.py
-    └── GUION.md
+├── demo2-cdc-dms/
+│   ├── infra/                # Terraform: VPC, RDS, Secrets Manager, DMS
+│   ├── sql/                  # esquema, usuario DMS, cambios de la demo
+│   ├── scripts/              # cargar_semilla.py, tarea_dms.py, aplicar_cambios.py, comprobar_cdc.py
+│   └── GUION.md
+├── demo3-catalogo-athena/
+│   ├── infra/                # Terraform: bases de datos, crawler, workgroup
+│   ├── sql/                  # bronze.ventas, exploración, Iceberg de prueba, bronze.clientes
+│   ├── scripts/              # athena.py, comprobar_demo3.py
+│   └── GUION.md
+└── demo4-pipeline/
+    ├── infra/                # Terraform: Glue, red, Redshift, SNS, Step Functions, Scheduler, QuickSight
+    ├── infra-lakeformation/  # solo el profesor
+    ├── glue/                 # jobs, transformaciones.py y sus tests
+    ├── sql/                  # DDL de silver (Athena) y gold (Redshift)
+    ├── stepfunctions/        # plantilla de la máquina de estados y sus tests
+    ├── scripts/              # crear_silver, cargar_referencia, desplegar_redshift, ejecutar_pipeline...
+    ├── GUION.md
+    └── GUION_LAKE_FORMATION.md
 ```
 
 `comun/maestros.py` es la única fuente de tiendas, clientes y productos. El generador (demo 1) y la carga de RDS (demo 2) lo usan, así que cualquier `cliente_id` o `producto_id` de una venta existe en los maestros que replica DMS.
@@ -65,8 +86,13 @@ Todos los scripts de apoyo están en Python para que funcionen igual en Windows,
 | 4. Demo 2: infraestructura | `cd demo2-cdc-dms/infra && terraform init && terraform apply` (≈ 10 min) | **≈ 0,06 USD/h** mientras exista |
 | 5. Demo 2 | Ver [demo2-cdc-dms/GUION.md](demo2-cdc-dms/GUION.md) | |
 | 6. Limpieza demo 2 | `python demo2-cdc-dms/scripts/tarea_dms.py parar` y `cd demo2-cdc-dms/infra && terraform destroy` | |
+| 7. Histórico | `python demo1-ingesta/scripts/backfill_ventas.py` | Céntimos |
+| 8. Demo 3 | Ver [demo3-catalogo-athena/GUION.md](demo3-catalogo-athena/GUION.md) | Céntimos |
+| 9. Demo 4 | Ver [demo4-pipeline/GUION.md](demo4-pipeline/GUION.md) (la preparación tarda ~30 min) | Ver abajo |
 
-La base y la demo 1 **se mantienen** para la sesión 2: no tienen coste por hora. La demo 2 se **destruye** al terminar.
+La base y las demos 1 y 3 **se mantienen**: no tienen coste por hora. La demo 2 se **destruye** al terminar.
+
+**La demo 4 se mantiene para la sesión 3, y sí tiene un coste fijo pequeño.** El workgroup público de Redshift lleva una IP elástica (~0,005 USD/h, ~3,60 USD/mes) aunque no haya consultas, más ~0,80 USD/mes de dos secretos. Mientras consulta, Redshift cuesta ~1,50 USD/h, con un tope de 10 RPU-hora al día. La programación horaria está **desactivada** por defecto.
 
 ## Decisiones y avisos
 
@@ -76,7 +102,7 @@ La base y la demo 1 **se mantienen** para la sesión 2: no tienen coste por hora
 - **Estado de Terraform local**, uno por módulo y sin backend remoto. Los módulos de las demos leen los outputs de la base con `terraform_remote_state` (backend `local`). Por eso hay que aplicar la base primero y **no moverla de carpeta**.
 - **Secretos.** El estado de la demo 2 contiene la contraseña maestra de RDS en claro. `.gitignore` excluye `*.tfstate*`, `terraform.tfvars`, `.env` y `salida/`. Nunca subas estos ficheros.
 - **AWS Budgets** avisa por email al 80 % y al 100 % de 10 USD al mes. Es un aviso, no un límite: no para nada.
-- **Etiquetas**: todos los recursos llevan `proyecto = curso-aws-hp`, `sesion = 1` y `demo = base | demo1 | demo2`. Para listarlos:
+- **Etiquetas**: todos los recursos llevan `proyecto = curso-aws-hp`, `sesion = 1 | 2` y `demo = base | demo1 | demo2 | demo3 | demo4 | lakeformation`. Para listarlos:
   ```bash
   aws resourcegroupstaggingapi get-resources --tag-filters Key=proyecto,Values=curso-aws-hp --profile curso --region eu-west-1
   ```
@@ -114,9 +140,11 @@ aws iam attach-user-policy --user-name <tu-usuario> --policy-arn <arn> --profile
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                      # tests de maestros, API y generador (sin AWS: Stubber y moto)
+pytest                      # tests sin AWS: Stubber, moto y PySpark local (necesita Java 8, 11 o 17)
 ruff check .
 terraform fmt -check -recursive && (cd infra/base && terraform validate)
 ```
 
-Los tests incluyen una prueba de extremo a extremo (generador → API → Firehose simulado con moto → S3 simulado) que comprueba que lo que llega a bronze cuadra con el resumen del generador.
+`transformaciones.py` tiene tests locales con el PySpark de Glue 5.0 (Spark 3.5.4). El MERGE real sobre Iceberg, Data Quality y los bookmarks solo se prueban contra AWS.
+
+Los tests incluyen también una prueba de extremo a extremo (generador → API → Firehose simulado con moto → S3 simulado) que comprueba que lo que llega a bronze cuadra con el resumen del generador.

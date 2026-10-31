@@ -46,6 +46,8 @@ PAISES: dict[str, str] = {  # país -> moneda
     "CN": "CNY",
 }
 
+REGIONES: dict[str, str] = {"ES": "Europa", "FR": "Europa", "US": "América", "JP": "Asia", "CN": "Asia"}
+
 PREFIJOS_TELEFONO = {"ES": "+34", "FR": "+33", "US": "+1", "JP": "+81", "CN": "+86"}
 
 
@@ -123,6 +125,10 @@ class Tienda:
     @property
     def moneda(self) -> str:
         return PAISES[self.pais]
+
+    @property
+    def region(self) -> str:
+        return REGIONES[self.pais]
 
     @property
     def numero(self) -> str:

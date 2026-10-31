@@ -1,7 +1,8 @@
 """Generador de ventas del TPV: envía lotes de eventos a la API de ventas.
 
-Un evento es una línea de ticket. Tiendas, clientes y productos salen de
-comun/maestros.py, así que existen en los maestros que replica DMS (demo 2).
+Un evento es una línea de ticket. Los eventos se construyen en comun/eventos.py
+con los maestros de comun/maestros.py, así que tiendas, clientes y productos
+existen en los maestros que replica DMS (demo 2).
 
 Configuración por variables de entorno (ver Config.desde_entorno).
 """
@@ -14,20 +15,14 @@ import os
 import random
 import signal
 import time
-import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx2 as httpx
 
-from comun import maestros
+from comun.eventos import FabricaVentas, ahora_iso
 
 log = logging.getLogger("generador")
-
-MEDIOS_PAGO_TIENDA = ("TARJETA", "EFECTIVO", "MOVIL")
-MEDIOS_PAGO_ONLINE = ("TARJETA", "PAYPAL")
-PESO_ONLINE = 4  # cada canal online pesa como 4 tiendas físicas
 
 
 @dataclass(frozen=True)
@@ -64,79 +59,6 @@ class Config:
     def ritmo(self) -> float:
         """Eventos por segundo efectivos: en hora pico, x10."""
         return self.eventos_por_segundo * (10 if self.modo == "pico" else 1)
-
-
-def ahora_iso() -> str:
-    """Hora actual en UTC con milisegundos y sufijo Z: 2026-10-24T10:15:32.481Z."""
-    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-
-
-class FabricaVentas:
-    """Genera tickets coherentes con los maestros."""
-
-    def __init__(self, rng: random.Random | None = None):
-        self.rng = rng or random.Random()
-        self.tiendas = maestros.tiendas()
-        self.pesos = [PESO_ONLINE if t.es_online else 1 for t in self.tiendas]
-        self.productos = maestros.productos()
-        self.clientes = maestros.clientes_por_pais()
-        # Secuencia de ticket por tienda. Empieza en los segundos transcurridos del día
-        # para no repetir ticket_id entre ejecuciones sucesivas del mismo día.
-        hoy = datetime.now(UTC)
-        inicio = hoy.hour * 3600 + hoy.minute * 60 + hoy.second
-        self.secuencias = {t.tienda_id: inicio for t in self.tiendas}
-
-    def ticket(self) -> list[dict]:
-        """Un ticket de 1 a 4 líneas: un evento por línea."""
-        rng = self.rng
-        tienda = rng.choices(self.tiendas, self.pesos)[0]
-        event_ts = ahora_iso()
-        self.secuencias[tienda.tienda_id] += 1
-        ticket_id = f"T-{event_ts[:10].replace('-', '')}-{tienda.numero}-{self.secuencias[tienda.tienda_id]:06d}"
-        if tienda.es_online:
-            canal = rng.choice(("WEB", "APP"))
-            medio_pago = rng.choice(MEDIOS_PAGO_ONLINE)
-        else:
-            canal = "TPV"
-            medio_pago = rng.choices(MEDIOS_PAGO_TIENDA, (60, 25, 15))[0]
-        # ~30 % de los tickets sin cliente identificado
-        cliente = None if rng.random() < 0.30 else rng.choice(self.clientes[tienda.pais]).cliente_id
-        moneda = tienda.moneda
-        decimales = maestros.decimales(moneda)
-
-        lineas = []
-        num_lineas = rng.choices((1, 2, 3, 4), (45, 30, 15, 10))[0]
-        for n, producto in enumerate(rng.sample(self.productos, num_lineas), start=1):
-            unidades = rng.choices((1, 2, 3), (88, 9, 3))[0]
-            precio = producto.precio_en(moneda)
-            descuento = 0.0
-            if rng.random() < 0.20:  # algunas líneas con descuento del 10 % al 30 %
-                descuento = round(precio * unidades * rng.uniform(0.10, 0.30), decimales)
-            lineas.append(
-                {
-                    "event_id": str(uuid.uuid4()),
-                    "event_ts": event_ts,
-                    "canal": canal,
-                    "tienda_id": tienda.tienda_id,
-                    "ticket_id": ticket_id,
-                    "linea": n,
-                    "cliente_id": cliente,
-                    "producto_id": producto.producto_id,
-                    "unidades": unidades,
-                    "precio_unitario": precio,
-                    "descuento": descuento,
-                    "moneda": moneda,
-                    "medio_pago": medio_pago,
-                }
-            )
-        return lineas
-
-    def invalido(self, evento: dict) -> dict:
-        """Copia del evento que incumple el contrato (la API debe responder 422)."""
-        campo, valor = self.rng.choice(
-            [("event_id", "no-es-uuid"), ("unidades", 0), ("precio_unitario", -1.0), ("moneda", "EU")]
-        )
-        return {**evento, campo: valor}
 
 
 @dataclass

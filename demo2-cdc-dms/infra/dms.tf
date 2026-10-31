@@ -119,6 +119,15 @@ resource "aws_iam_role_policy" "dms_s3" {
   policy = data.aws_iam_policy_document.dms_s3.json
 }
 
+# --- Logs de las tareas de DMS ------------------------------------------------------------
+# Sin declararlo, DMS lo crea por su cuenta y terraform destroy no lo borra. El nombre
+# lo fija DMS: dms-tasks-<id de la instancia de replicación>.
+
+resource "aws_cloudwatch_log_group" "dms_tareas" {
+  name              = "dms-tasks-curso-aws-hp-demo2"
+  retention_in_days = 7
+}
+
 # --- Instancia de replicación -------------------------------------------------------------
 
 resource "aws_dms_replication_subnet_group" "demo2" {
@@ -222,4 +231,7 @@ resource "aws_dms_replication_task" "clientes_productos" {
     # DMS completa los ajustes con sus valores por defecto: evitar diferencias perpetuas
     ignore_changes = [replication_task_settings]
   }
+
+  # El log group debe existir antes de que la tarea escriba en él
+  depends_on = [aws_cloudwatch_log_group.dms_tareas]
 }
