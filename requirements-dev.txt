@@ -9,3 +9,5 @@ ruff==0.17.3
 # setuptools aporta distutils, que Spark 3.5 usa y Python 3.12 ya no incluye.
 pyspark==3.5.4
 setuptools==84.2.1
+# Tests de las funciones del notebook de la demo 6
+pandas==3.1.0

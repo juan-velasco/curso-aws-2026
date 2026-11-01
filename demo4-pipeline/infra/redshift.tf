@@ -49,6 +49,26 @@ resource "aws_iam_role_policy" "redshift" {
   policy = data.aws_iam_policy_document.redshift_silver.json
 }
 
+# Sesión 3: UNLOAD y COPY de la previsión de ventas (demo 6)
+data "aws_iam_policy_document" "redshift_ml" {
+  statement {
+    sid = "LeerEscribirMl"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:AbortMultipartUpload",
+    ]
+    resources = ["${local.bucket_arn}/ml/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "redshift_ml" {
+  name   = "lectura-escritura-ml"
+  role   = aws_iam_role.redshift.id
+  policy = data.aws_iam_policy_document.redshift_ml.json
+}
+
 # --- Namespace y workgroup -----------------------------------------------------------------
 
 resource "aws_redshiftserverless_namespace" "hp_retail" {

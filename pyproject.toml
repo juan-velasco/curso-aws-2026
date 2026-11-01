@@ -2,8 +2,8 @@
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
-pythonpath = [".", "demo1-ingesta/api", "demo1-ingesta/generador", "demo1-ingesta/scripts", "demo4-pipeline/glue", "demo4-pipeline/scripts"]
-testpaths = ["comun/tests", "demo1-ingesta/api/tests", "demo1-ingesta/generador/tests", "demo1-ingesta/scripts/tests", "demo4-pipeline/glue/tests", "demo4-pipeline/scripts/tests", "demo4-pipeline/stepfunctions/tests"]
+pythonpath = [".", "demo1-ingesta/api", "demo1-ingesta/generador", "demo1-ingesta/scripts", "demo4-pipeline/glue", "demo4-pipeline/scripts", "demo5-api-fargate/scripts", "demo6-prevision-sagemaker/scripts", "ejercicio-f-cognito/scripts", "ejercicio-g-guardduty-inspector/scripts"]
+testpaths = ["comun/tests", "demo1-ingesta/api/tests", "demo1-ingesta/generador/tests", "demo1-ingesta/scripts/tests", "demo4-pipeline/glue/tests", "demo4-pipeline/scripts/tests", "demo4-pipeline/stepfunctions/tests", "demo5-api-fargate/scripts/tests", "demo6-prevision-sagemaker/scripts/tests", "ejercicio-f-cognito/scripts/tests", "ejercicio-g-guardduty-inspector/scripts/tests"]
 
 [tool.ruff]
 target-version = "py312"
@@ -14,4 +14,4 @@ select = ["E", "F", "W", "I", "B", "UP"]
 ignore = ["B905"]  # zip() sin strict= aparece así en el código de las diapositivas
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "backfill_ventas", "cargar_referencia", "comun", "generador", "transformaciones"]
+known-first-party = ["app", "backfill_ventas", "cargar_referencia", "comun", "estado_servicios", "generador", "generar_clima", "generar_taskdef", "hallazgos_ejemplo", "ip_tarea", "probar_api", "registrar_publicar", "resumen_inspector", "transformaciones"]

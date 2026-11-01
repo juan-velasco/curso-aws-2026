@@ -1,0 +1,3 @@
+# Copia este fichero como terraform.tfvars (no se sube a git)
+# perfil = "curso"
+# mi_ip = "203.0.113.10"

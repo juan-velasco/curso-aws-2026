@@ -45,3 +45,8 @@ output "quicksight_dataset_id" {
 output "quicksight_dataset_arn" {
   value = var.quicksight_activo ? aws_quicksight_data_set.ventas[0].arn : null
 }
+
+output "quicksight_fuente_arn" {
+  description = "Fuente de datos de QuickSight, que reutiliza la demo 6"
+  value       = var.quicksight_activo ? aws_quicksight_data_source.gold[0].arn : ""
+}

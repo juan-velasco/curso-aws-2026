@@ -15,11 +15,14 @@ crash.log
 __pycache__/
 *.pyc
 .venv/
+.venv-sagemaker/
 .pytest_cache/
 .ruff_cache/
 
 # Salidas de las demos
 salida/
+# Lleva el ID de cuenta
+demo5-api-fargate/taskdef.json
 
 # Sistema
 .DS_Store

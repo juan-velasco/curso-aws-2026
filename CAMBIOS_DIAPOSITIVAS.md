@@ -1,6 +1,6 @@
 # Cambios propuestos a las diapositivas
 
-Diferencias entre las diapositivas y lo que funciona al probarlo contra AWS. Las citas son del anexo A de `HANDOFF_SESION2.md`.
+Diferencias entre las diapositivas y lo que funciona al probarlo contra AWS. Las citas son del anexo A de `HANDOFF_SESION2.md` y de `HANDOFF_SESION3.md`.
 
 ## Sesión 1
 
@@ -57,3 +57,49 @@ Los cambios de esta sesión ya se aplicaron a las diapositivas y el fichero se b
 - **Granularidad de día del SCD2.** Las ventas del 28-10-2026 anteriores al cambio de C-17 (17:23) quedan asociadas a la versión Premium, porque `valid_from` es una fecha. Limitación conocida.
 - **Nivel de tabla de los crawlers.** Para `TableLevelConfiguration`, la API cuenta el bucket como nivel 1: `bucket/bronze/cdc/public/productos` es el nivel 5, aunque la documentación diga que la carpeta superior es el 1.
 - **Volumen del backfill.** Son ~260.000 eventos, no ~180.000: los factores de fin de semana y rebajas multiplican el volumen, y los 120 días incluyen julio y agosto.
+
+## Sesión 3
+
+Las diapositivas de seguridad (65 en adelante) **aún no las ha revisado el profesor**.
+
+### Desviaciones previstas en el handoff
+
+| Diapositiva | Texto actual | Texto propuesto | Motivo |
+|---|---|---|---|
+| 10 · Task definition | `environment` solo con `FIREHOSE_STREAM` | Añadir `{ "name": "AWS_REGION", "value": "eu-west-1" }` | **Error:** la API no arranca sin ella |
+| 10 · Task definition | `executionRoleArn` con `ecsTaskExecutionRole` | Rol propio `curso-aws-hp-ecs-ejecucion` | En una cuenta de empresa, `ecsTaskExecutionRole` puede existir y ser compartido |
+| 15 · Comandos | `docker buildx build ... .` sin indicar desde dónde | Avisar: se lanza desde `demo1-ingesta/api/` | Es el contexto de build |
+| 15 · Comandos | `aws ecr create-repository --repository-name api-ventas` | Añadir `--image-scanning-configuration scanOnPush=true` | Se ve el escaneo básico, y enlaza con el ejercicio G |
+
+### Encontrado al probar
+
+| Diapositiva | Texto actual | Texto propuesto | Motivo |
+|---|---|---|---|
+| 15 · Comandos | `create-service` justo después de `create-cluster` | Añadir una nota: «La primera vez que la cuenta usa ECS, puede fallar: espera 30 s y repite» | Falló con `Unable to assume the service linked role`: AWS acababa de crear `AWSServiceRoleForECS`. A los 20 s funcionó |
+| 49 · UNLOAD | `IAM_ROLE default FORMAT AS PARQUET` | Añadir `CLEANPATH` | Sin ninguna de las dos opciones, el handoff indica que el segundo UNLOAD falla (no se ha probado). `CLEANPATH` probado: se lanzó dos veces. Se prefiere a `ALLOWOVERWRITE`, que puede dejar partes antiguas si cambia el número de ficheros |
+| 49 · UNLOAD | Lee `gold.mv_ventas_diarias` directamente | Lanzar antes `REFRESH MATERIALIZED VIEW gold.mv_ventas_diarias` | Con `AUTO REFRESH`, tras terminar el pipeline la vista seguía sin el último día, y el clima salía 2 días corto |
+| 55 · Entrenar | Termina al evaluar | Añadir: reentrenar con todo el histórico, y las iteraciones de `best_iteration`, antes de prever | Si no, la previsión no aprende de los últimos 28 días. Ver sección 8 del notebook |
+| 56 · Training job | `sagemaker.get_execution_role()` y `from sagemaker.xgboost.estimator import XGBoost` | Avisar: instalar `sagemaker<3` (probado con 2.257.7) | La versión 3 retiró los estimadores, y la imagen de Studio no trae el SDK |
+| 56 · Training job | Sin rutas de salida | Añadir `output_path`, `code_location` y `sagemaker.Session(default_bucket=bucket)` | Si no, el SDK crea un bucket `sagemaker-<región>-<cuenta>` |
+| 56 · Training job | `framework_version="1.7-1"`, sin más | Añadir una nota: «Studio trae XGBoost 2.1.4: el notebook y el training job usan versiones distintas» | El contenedor `1.7-1` sigue disponible en `eu-west-1` y admite `enable_categorical`. En esa versión, el callback se escribe `TrainingCheckPoint`: `TrainingCheckpoint` falla con `AttributeError` |
+| 56 · Training job | Sin métricas | Avisar: el contenedor rechaza `metric_definitions` | `You can't override the metric definitions for Amazon SageMaker algorithms`. El WAPE se guarda en `metricas.json`, dentro de `model.tar.gz` |
+| 62 · Qué comprobar | «El modelo gana a la línea base» | «Compara el modelo con la línea base. Con 120 días, puede no ganar» | **No gana:** WAPE 0,349 de la línea base frente a 0,374 sin clima y 0,381 con clima. Sin los 3 últimos días, atípicos, 0,197 frente a 0,227. No se ha forzado |
+| 76 · Solución del ejercicio G | «Decenas de hallazgos `[SAMPLE]`» | Comprobar en la consola | En la API, `Title` no lleva `[SAMPLE]`: la marca es `"sample": true` en `Service.AdditionalInfo.Value`. La consola no se ha mirado, ni se ha medido el número con todos los tipos |
+| 76 · Solución del ejercicio G | Imagen slim «con muy pocos y ninguno crítico» | Sin cambios, con cifras: 24 frente a 8.401, y 0 críticos frente a 431 | Coincide. Paquete con más CVE en `python:3.8`: `linux`, 7.679 |
+| 76 · Nota del orador | «Puede tardar unos minutos» | «Puede tardar más de 20 minutos» | La imagen de `python:3.8` (364 MB) seguía en `PENDING` a los 20 min, y estaba `ACTIVE` antes de los 25 |
+| 76 · Qué se pide | «¿Llegó el email?» | Añadir: «Mira en el correo no deseado» | En la prueba no se vio a la primera, aunque SNS lo había entregado |
+
+### Comprobado: sin cambios
+
+| Tema | Resultado |
+|---|---|
+| 10 y 11 · Fargate y task role | `cpu 256`, `memory 512`, ARM64. La API escribe en Firehose sin claves, con el rol y la política de la diapositiva |
+| 55 · Modelo en Studio | `XGBRegressor` con los hiperparámetros de la diapositiva, en `ml.t3.medium`: menos de 1 s. La imagen ya trae `xgboost`, `pandas` y `s3fs` |
+| 55 · Importancia de features | Calendario > clima. Ganancia: `mes` 60,4, `temp_media` 0,7 y `lluvia_mm` 0,6 |
+| 67 a 69 · Cognito | 401 sin token, 200 con el ID token sin `Bearer`, y `cognito:groups` en el token |
+| 72 · Regla de EventBridge | El patrón funciona: el correo llega para un hallazgo de ejemplo de severidad 8,0 |
+
+### Notas (no son cambios)
+
+- **Último día de gold.** Tras la demo 5, gold termina el 01-11-2026 (2.082 unidades), con el 31-10 a 0 y el 30-10 a 11.035 por los generadores de prueba. Los alumnos con otros datos verán otros WAPE.
+- **RLS en la demo 4 (diapositiva 47).** Comprobado con un usuario temporal con el rol `analista_asia`: al unir con `dim_tienda`, solo ve JP y CN. **Pero `SELECT count(*) FROM gold.fct_ventas`, sin unir, devuelve las 268.580 filas**, porque la política está en `dim_tienda`. Y `gold.dim_cliente` no tiene columna `email`: el `GRANT` por columnas no protege nada en esa tabla.

@@ -1,0 +1,5 @@
+# Copia este fichero como terraform.tfvars (no se sube a git)
+# perfil = "curso"
+# Después de lanzar preparar_datos.py, si Amazon Quick está activa:
+# quicksight_activo = true
+# quicksight_usuario_arn = "arn:aws:quicksight:eu-west-1:<ID de cuenta>:user/default/<usuario>"

@@ -1,0 +1,6 @@
+# Copia este fichero como terraform.tfvars (no se sube a git)
+email_alertas = "tu.email@ejemplo.com"
+# perfil = "curso"
+# Lanza antes estado_servicios.py. Solo en true si el servicio está desactivado y lo administras tú:
+# crear_detector_guardduty = true
+# activar_inspector_ecr = true
