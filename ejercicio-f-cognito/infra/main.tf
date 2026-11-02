@@ -11,6 +11,7 @@ locals {
 
 resource "aws_cognito_user_pool" "tiendas" {
   name                = "tiendas"
+  user_pool_tier      = "ESSENTIALS" # el plan que propone la consola y el que usan las diapositivas
   mfa_configuration   = "OFF"
   deletion_protection = "INACTIVE"
 }

@@ -16,7 +16,7 @@ Donde aparece `<ID de cuenta>`, el valor real se obtiene con `terraform -chdir=i
 | Demo 6: ruta opcional | **Probada:** training job en Spot, registry y batch transform. La aprobación solo se pudo ejercitar con un umbral de mentira (`--wape-base 0.5`), porque con el real el modelo no se aprueba, como debe ser |
 | Demo 6: apagado por inactividad | Configurado (60 min). **Sin ver actuar** |
 | Demo 6: `terraform destroy` | **Sin probar.** SageMaker crea dos security groups en la VPC que pueden bloquear el borrado |
-| Ejercicio F | **Completo** y probado con Terraform y scripts. Los comandos de CLI y la consola de `SOLUCION.md` no se han lanzado a mano |
+| Ejercicio F | **Completo.** Terraform, scripts y secuencia de CLI probados contra AWS, y 3 errores típicos provocados (pila temporal `-cli`, ya borrada). `SOLUCION.md` es ahora guion de consola: **la mayoría de formularios revisados en la consola, sin crear nada con ellos, y otros sin abrir (ver la tabla de `SOLUCION.md`)**, así que el recorrido completo por consola sigue sin probar, y el bloque de PowerShell tampoco. **La contraseña de `tienda-vlc-003` del módulo se restableció a un valor que no se guardó: antes de clase, `crear_usuario.py`** |
 | Ejercicio G | **Completo** y probado, incluido `destroy`. **Solo 2 hallazgos de ejemplo:** no se ha medido el volumen sin `--tipos` |
 | Dashboard de la demo 4 | Lo sigue haciendo el profesor a mano (`ESTADO_SESION2.md`) |
 
@@ -51,6 +51,8 @@ Donde aparece `<ID de cuenta>`, el valor real se obtiene con `terraform -chdir=i
 └── ejercicio-g-guardduty-inspector/
     └── SOLUCION.md, infra/, scripts/ (estado_servicios, hallazgos_ejemplo, subir_imagenes, resumen_inspector, tests/)
 ```
+
+Añadidos después: `HANDOFF_EJERCICIO_F.md`, `ejercicio-f-cognito/cli/` (plantillas de la API para la CLI) y `scripts/tests/test_probar_api.py`.
 
 Cambios en lo existente: `demo4-pipeline/infra` (política `lectura-escritura-ml` y output `quicksight_fuente_arn`), `pyproject.toml`, `requirements-dev.txt` (`pandas`), `.gitignore`, `README.md` y `CAMBIOS_DIAPOSITIVAS.md`.
 
@@ -166,6 +168,7 @@ Las que afectan a las diapositivas están en `CAMBIOS_DIAPOSITIVAS.md`. Además:
 | Output `bucket_name` en la demo 5 | No pedido | Añadido | Lo usa `comprobar_demo5.py` |
 | Output `quicksight_fuente_arn` en la demo 4 | «Léela de su estado» | Añadido | No existía |
 | `estado_servicios.py` | Mostrar el estado | También `--guardar` y `--comparar` | Criterio de `destroy`. Compara solo los tipos activos, porque la API añade tipos (`ami`) |
+| Plan del user pool (`HANDOFF_EJERCICIO_F.md`) | Valorar Lite | `ESSENTIALS`, explícito en Terraform | Es el plan por defecto, el de la consola de los alumnos y el de las diapositivas. Sin cambios en AWS |
 | `comprobar_demo5.py` | | También `--parado` | Criterio de `desired-count 0` |
 | Hallazgos de ejemplo | «`[SAMPLE]` por severidad» | Cuenta por `sample: true` | La API no pone `[SAMPLE]` en el título |
 | Pruebas | Lanzar el notebook en Studio | Antes, en local, sin escribir en S3 | Para detectar errores sin pagar el space |
@@ -181,7 +184,7 @@ Las que afectan a las diapositivas están en `CAMBIOS_DIAPOSITIVAS.md`. Además:
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                          # 117 tests, ~20 s, sin AWS
+pytest                          # 128 tests, ~20 s, sin AWS
 ruff check .
 terraform fmt -check -recursive
 ```

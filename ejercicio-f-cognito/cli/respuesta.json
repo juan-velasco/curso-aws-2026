@@ -1,0 +1,3 @@
+{
+  "application/json": "{\n  \"mensaje\": \"Hola desde la API protegida\",\n  \"usuario\": \"$context.authorizer.claims['cognito:username']\",\n  \"grupos\": \"$context.authorizer.claims['cognito:groups']\"\n}\n"
+}

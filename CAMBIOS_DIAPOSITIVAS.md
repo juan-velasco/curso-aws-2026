@@ -89,6 +89,26 @@ Las diapositivas de seguridad (65 en adelante) **aún no las ha revisado el prof
 | 76 · Nota del orador | «Puede tardar unos minutos» | «Puede tardar más de 20 minutos» | La imagen de `python:3.8` (364 MB) seguía en `PENDING` a los 20 min, y estaba `ACTIVE` antes de los 25 |
 | 76 · Qué se pide | «¿Llegó el email?» | Añadir: «Mira en el correo no deseado» | En la prueba no se vio a la primera, aunque SNS lo había entregado |
 
+### Ejercicio F: diapositivas 64 a 75 rehechas
+
+Probado contra AWS el 01-11-2026, con la API del módulo de Terraform y un user pool sin scopes en el método. Los formularios de consola se han visto el mismo día, sin crear nada con ellos.
+
+| Diapositiva | Texto actual | Texto propuesto | Motivo |
+|---|---|---|---|
+| 68 · Cómo se usa el token | `Authorization: Bearer eyJ…` | **Sin cambios** | **Probado:** ID token con `Bearer`, 200; sin `Bearer`, 200. La documentación no menciona el prefijo |
+| 69 · Tres formas de proteger una API | «Autoriza con el access token. El Cognito authorizer de REST API sin scopes también acepta el ID token» | «Sin scopes en el método, el authorizer de REST API usa el **ID token**. El access token requiere scopes en el método» | **Error. Probado:** access token sin scopes, 401, con o sin `Bearer`; ID token, 200. La documentación de API Gateway lo confirma: «If you do not configure any Authorization scopes, API Gateway treats the supplied token as an identity token». No se ha probado un método con scopes |
+| 70 · Cómo se obtiene el token | `USER_PASSWORD_AUTH` «para migrar usuarios» | «Para migrar usuarios y para laboratorios o apps que envían la contraseña» | La documentación lo presenta también para «a client-side mobile or native app», y en migraciones pide pasar después «to the more secure SRP flow». Es el flujo del ejercicio |
+| 67 · Precios | Plan **Essentials** por defecto | **Sin cambios** | La documentación y la API: «Defaults to ESSENTIALS». **Probado:** el módulo de Terraform y `create-user-pool` sin plan crean `ESSENTIALS`. El asistente de consola no pregunta. Essentials no aporta nada a este ejercicio, pero **no se fija Lite**: los alumnos tendrían otro plan que el de su consola. El módulo declara `ESSENTIALS` de forma explícita. Lo de los 10.000 MAU gratis no se ha comprobado |
+| Ejercicio F, Fase 1 | «Usuario de prueba con contraseña permanente» en la consola | «Crea el usuario en la consola y hazlo permanente con `admin-set-user-password --permanent`» | **El formulario *Create user* solo admite *Temporary password*.** El usuario queda en `FORCE_CHANGE_PASSWORD`, y `initiate-auth` no da tokens: `ChallengeName: NEW_PASSWORD_REQUIRED` |
+| Ejercicio F, Fase 1 | «User pool `tiendas`» | Avisar: el asistente no pide el nombre. Se crea con uno generado y se cambia en **Overview → Rename** | *Create user pool* abre *Set up resources for your application*, que solo pide el nombre de la aplicación |
+| Ejercicio F, Fase 1 | «App client público, sin secret» | Indicar: «tipo *Single-page application (SPA)*; no *Traditional web application*, que es la marcada por defecto» | El asistente crea el cliente a la vez, y no pregunta por el secret. **Que SPA lo cree sin secret no se ha comprobado**: no se ha enviado el formulario |
+| Ejercicio F, Fase 1 | No menciona el autorregistro | Añadir: «Desmarca *Enable self-registration*» | Viene marcado |
+| Ejercicio F, Fase 1 | «Con `ALLOW_USER_PASSWORD_AUTH`» | Añadir: «Hay que editar el cliente después de crearlo» | El asistente no muestra los flujos. Están en **App client → Edit → Authentication flows** |
+| Ejercicio F, Fase 1 | «Inicio de sesión por nombre de usuario» | Comprobar | El asistente avisa de que, «with username alone», hay que exigir email o teléfono. **Sin comprobar** si sigue siendo obligatorio con el autorregistro desactivado: en CLI y Terraform no hace falta |
+| Ejercicio F, Fase 2 y jwt.io | Decodificar con jwt.io | `probar_api.py --decodificar <token>`, o la línea de Python de `SOLUCION.md` | Pegar un token vigente en una web de terceros es una mala práctica |
+
+**Errores provocados contra AWS.** Sin redesplegar tras añadir el autorizador: sigue en 200, sin token. App client con secret: `Client ... is configured with secret but SECRET_HASH was not received`. Usuario sin contraseña permanente: `NEW_PASSWORD_REQUIRED`.
+
 ### Comprobado: sin cambios
 
 | Tema | Resultado |
@@ -96,7 +116,7 @@ Las diapositivas de seguridad (65 en adelante) **aún no las ha revisado el prof
 | 10 y 11 · Fargate y task role | `cpu 256`, `memory 512`, ARM64. La API escribe en Firehose sin claves, con el rol y la política de la diapositiva |
 | 55 · Modelo en Studio | `XGBRegressor` con los hiperparámetros de la diapositiva, en `ml.t3.medium`: menos de 1 s. La imagen ya trae `xgboost`, `pandas` y `s3fs` |
 | 55 · Importancia de features | Calendario > clima. Ganancia: `mes` 60,4, `temp_media` 0,7 y `lluvia_mm` 0,6 |
-| 67 a 69 · Cognito | 401 sin token, 200 con el ID token sin `Bearer`, y `cognito:groups` en el token |
+| Cognito, flujo de prueba | 401 sin token, 200 con el ID token y `cognito:groups` en el token. Probado con Terraform y con la secuencia de CLI de `SOLUCION.md` |
 | 72 · Regla de EventBridge | El patrón funciona: el correo llega para un hallazgo de ejemplo de severidad 8,0 |
 
 ### Notas (no son cambios)
