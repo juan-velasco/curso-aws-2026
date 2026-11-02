@@ -4,7 +4,9 @@
 **Duración:** ~20 min.
 **Coste:** céntimos. En las pruebas, 11 MB por una consulta sin filtro (≈ 0,00005 USD) y 150 KB con filtro de partición.
 
-Todos los comandos se lanzan desde la **raíz del repositorio**.
+**En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)). Todos los comandos se lanzan desde la **raíz del repositorio**.
+
+**Requisitos:** `infra/base` y `demo1-ingesta/infra` aplicados, y la **demo 2 ejecutada**. Sus ficheros de `bronze/cdc/` se quedan en el bucket: sin ellos, el crawler no crea `bronze.productos` y `bronze.clientes` sale vacía.
 
 ---
 
@@ -46,8 +48,8 @@ Terraform ya ha creado `bronze` y `silver`. Consola: **AWS Glue → Data Catalog
 ## 2. Lanzar el crawler de productos y crear `bronze.clientes` con DDL (≈ 3 min)
 
 ```bash
-aws glue start-crawler --name curso-bronze-cdc --profile curso --region eu-west-1
-aws glue get-crawler --name curso-bronze-cdc --query "Crawler.[State,LastCrawl.Status]" --profile curso --region eu-west-1
+aws glue start-crawler --name curso-bronze-cdc --region eu-west-1
+aws glue get-crawler --name curso-bronze-cdc --query "Crawler.[State,LastCrawl.Status]" --region eu-west-1
 ```
 
 Tarda ~1 min. **Salida esperada:** `READY`, `SUCCEEDED` y la tabla `bronze.productos`, con `precio_catalogo` y `coste_unitario` en `decimal(8,2)` y `ts_commit` en `string`.

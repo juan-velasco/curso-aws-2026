@@ -4,6 +4,8 @@
 
 **Duración:** ~10 min. Va después de las diapositivas de Lake Formation y antes del ejercicio C.
 
+**En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)).
+
 > **Probado en la cuenta de pruebas** el 30-10-2026: los criterios de los pasos 5 y 6, y el pipeline completo con el módulo aplicado. También el ciclo `destroy` y `apply`: los ajustes del lago quedan idénticos a la copia previa, sin ubicaciones, LF-Tags ni filtros. **Puede quedar un opt-in residual** de un rol ya borrado: pasó en 2 de 3 ciclos y es inofensivo (ver [Después de la clase](#después-de-la-clase)). **Falta comprobar la vista de la consola**, porque las pruebas se hicieron asumiendo los roles por API.
 
 ## Qué toca en la cuenta
@@ -15,7 +17,7 @@
 
 1. Guarda la configuración actual:
    ```bash
-   aws lakeformation get-data-lake-settings --profile curso --region eu-west-1 > lf-antes.json
+   aws lakeformation get-data-lake-settings --region eu-west-1 > lf-antes.json
    ```
 2. Aplica el módulo:
    ```bash
@@ -48,7 +50,7 @@
 cd demo4-pipeline/infra-lakeformation
 terraform destroy -parallelism=1
 cd ../..
-aws lakeformation get-data-lake-settings --profile curso --region eu-west-1 > lf-despues.json
+aws lakeformation get-data-lake-settings --region eu-west-1 > lf-despues.json
 ```
 
 Compara `lf-antes.json` y `lf-despues.json`: deben coincidir.
@@ -56,7 +58,7 @@ Compara `lf-antes.json` y `lf-despues.json`: deben coincidir.
 Comprueba que no quede ningún opt-in. En 2 de 3 ciclos de prueba quedó uno de un rol ya borrado:
 
 ```bash
-aws lakeformation list-lake-formation-opt-ins --profile curso --region eu-west-1
+aws lakeformation list-lake-formation-opt-ins --region eu-west-1
 ```
 
 Si aparece, bórralo con `aws lakeformation delete-lake-formation-opt-in`, indicando su `Principal` y su `Resource`. En un `apply` posterior, el rol se recrea con el mismo ARN y el opt-in vuelve a quedar bajo Terraform.

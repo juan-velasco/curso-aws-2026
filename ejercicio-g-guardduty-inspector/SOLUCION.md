@@ -2,6 +2,8 @@
 
 **Probado contra AWS** el 01-11-2026, incluido `destroy`: el estado final coincide con el inicial. **Se generaron solo 2 hallazgos de ejemplo**, de un tipo concreto, para no llenar el buzón: **no se ha medido** cuántos salen sin `--tipos` ni cuántos correos llegan.
 
+**En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)).
+
 ## Antes de crear nada
 
 En una cuenta de empresa, GuardDuty e Inspector suelen estar **activados y gestionados por la organización**.

@@ -1,6 +1,6 @@
 # Cambios propuestos a las diapositivas
 
-Diferencias entre las diapositivas y lo que funciona al probarlo contra AWS. Las citas son del anexo A de `HANDOFF_SESION2.md` y de `HANDOFF_SESION3.md`.
+Diferencias entre las diapositivas y lo que funciona al probarlo contra AWS.
 
 ## Sesión 1
 
@@ -34,7 +34,7 @@ Los cambios de esta sesión ya se aplicaron a las diapositivas y el fichero se b
 | 40 y 47 · Gold | `mv_ventas_diarias` con `JOIN gold.dim_tienda`, y RLS sobre `gold.dim_tienda` | `mv_ventas_diarias` con `JOIN gold.tienda_pais`, tabla auxiliar con `tienda_sk` y `pais` | **Error:** son incompatibles: `Materialized view base table "dim_tienda" is not supported` |
 | 47 · Permisos del motor | Termina en `ROW LEVEL SECURITY ON` | Añadir `GRANT IGNORE RLS TO ROLE lector_gold_completo` y `GRANT ROLE lector_gold_completo TO quicksight_ro` | Con RLS activo, quien no tiene política no ve filas: el dashboard quedaría vacío. `IGNORE RLS` no se puede conceder a un usuario, solo a un rol |
 | 38 · dim_cliente | Sin `pais` | Con `pais` | El handoff lo incluye como atributo SCD2 |
-| Crawlers | El crawler crea `clientes` y `productos` sobre `bronze/cdc/public/` | El crawler rastrea solo `productos`; `bronze.clientes` se crea con DDL (`sql/04_bronze_clientes.sql`) | Con la carga en la raíz, sin `Op`, y los cambios en `AAAA/MM/DD/`, con `Op`, crea tablas `load00000001_parquet` y `2026` y avisa `Found schemas don't match ... Can not create Tables`. Probado con exclusiones y con varios niveles de tabla. Athena sí lee la mezcla en una tabla sin particiones |
+| Crawlers | El crawler crea `clientes` y `productos` sobre `bronze/cdc/public/` | El crawler rastrea solo `productos`; `bronze.clientes` se crea con DDL (`demo3-catalogo-athena/sql/04_bronze_clientes.sql`) | Con la carga en la raíz, sin `Op`, y los cambios en `AAAA/MM/DD/`, con `Op`, crea tablas `load00000001_parquet` y `2026` y avisa `Found schemas don't match ... Can not create Tables`. Probado con exclusiones y con varios niveles de tabla. Athena sí lee la mezcla en una tabla sin particiones |
 | Crawlers | Exclusiones de la diapositiva | Comprobar | No tenía el texto de la diapositiva: usé `**/_SUCCESS`, `**/*.tmp` y `**/_temporary/**` |
 | 16 · Athena e Iceberg | `FOR TIMESTAMP AS OF (current_timestamp - interval '1' hour)` y `silver.ventas` | Sin cambios en la diapositiva. El fichero usa `interval '5' second` y `silver.ventas_prueba` | La tabla de prueba es recién creada y falla si se le pide una hora |
 | 15 · Explorar bronze | «Top 5 productos por venta neta» | Añadir una nota | Suma importes de monedas distintas, así que dominan los de JPY. Sirve como ejemplo de por qué hace falta silver |
@@ -60,7 +60,7 @@ Los cambios de esta sesión ya se aplicaron a las diapositivas y el fichero se b
 
 ## Sesión 3
 
-Las diapositivas de seguridad (65 en adelante) **aún no las ha revisado el profesor**.
+Las diapositivas 64 a 75 se rehicieron para el ejercicio F. **Comprueba la numeración de las referencias al ejercicio G** (72 y 76): se escribieron con la versión anterior.
 
 ### Desviaciones previstas en el handoff
 
@@ -75,6 +75,7 @@ Las diapositivas de seguridad (65 en adelante) **aún no las ha revisado el prof
 
 | Diapositiva | Texto actual | Texto propuesto | Motivo |
 |---|---|---|---|
+| 15 · Comandos | Los comandos `aws` no indican región | Añadir antes: `export AWS_REGION=eu-west-1` | Sin ella, van a la región del perfil. Con un perfil en `eu-west-3`, el repositorio y el cluster se crearían allí. Encontrado al revisar el guion; no se ha provocado |
 | 15 · Comandos | `create-service` justo después de `create-cluster` | Añadir una nota: «La primera vez que la cuenta usa ECS, puede fallar: espera 30 s y repite» | Falló con `Unable to assume the service linked role`: AWS acababa de crear `AWSServiceRoleForECS`. A los 20 s funcionó |
 | 49 · UNLOAD | `IAM_ROLE default FORMAT AS PARQUET` | Añadir `CLEANPATH` | Sin ninguna de las dos opciones, el handoff indica que el segundo UNLOAD falla (no se ha probado). `CLEANPATH` probado: se lanzó dos veces. Se prefiere a `ALLOWOVERWRITE`, que puede dejar partes antiguas si cambia el número de ficheros |
 | 49 · UNLOAD | Lee `gold.mv_ventas_diarias` directamente | Lanzar antes `REFRESH MATERIALIZED VIEW gold.mv_ventas_diarias` | Con `AUTO REFRESH`, tras terminar el pipeline la vista seguía sin el último día, y el clima salía 2 días corto |

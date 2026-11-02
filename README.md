@@ -14,18 +14,21 @@ Código de las demos y ejercicios de las sesiones 1, 2 y 3 del curso de AWS (12 
 | [Ejercicio F · Cognito](ejercicio-f-cognito/SOLUCION.md) | User pool, autorizador y JWT | API Gateway con mock y autorizador de Cognito |
 | [Ejercicio G · GuardDuty e Inspector](ejercicio-g-guardduty-inspector/SOLUCION.md) | Hallazgos, EventBridge y escaneo de imágenes. **Primero, `estado_servicios.py`** | GuardDuty → EventBridge → SNS; Inspector sobre ECR |
 
-Las diferencias con las diapositivas están en [CAMBIOS_DIAPOSITIVAS.md](CAMBIOS_DIAPOSITIVAS.md).
+Más documentación:
+
+- [Estado actual](docs/ESTADO.md): qué está desplegado, costes, pendientes, cómo destruirlo y qué falta por demostrar.
+- [Referencia técnica](docs/REFERENCIA.md): módulos, rutas en S3, esquemas, roles y decisiones.
+- [Cambios en las diapositivas](docs/CAMBIOS_DIAPOSITIVAS.md): diferencias con lo que funciona al probarlo.
 
 ## Requisitos
 
-- Una **cuenta de AWS de pruebas** (no la de producción) y un perfil de AWS CLI llamado `curso`:
+- Una **cuenta de AWS de pruebas** (no la de producción) y un perfil de AWS CLI. Vale cualquiera, también `default`:
   ```bash
-  aws configure --profile curso          # claves de acceso de un usuario IAM
-  aws configure sso --profile curso      # o con IAM Identity Center
-  aws sts get-caller-identity --profile curso
+  aws configure                # claves de acceso de un usuario IAM
+  aws configure sso            # o con IAM Identity Center
+  aws sts get-caller-identity
   ```
-  Para usar otro perfil, exporta `AWS_PROFILE` (scripts y Docker) y pon `perfil = "..."` en `terraform.tfvars`.
-- Docker Desktop, Python 3.12, Terraform ≥ 1.6, AWS CLI v2 y VS Code.
+- Docker Desktop, Python 3.12, Terraform ≥ 1.6, AWS CLI v2 y VS Code. `jq` y `gunzip` son opcionales: los scripts hacen lo mismo.
 - Dependencias de Python de los scripts de apoyo:
 
   ```bash
@@ -41,9 +44,27 @@ Las diferencias con las diapositivas están en [CAMBIOS_DIAPOSITIVAS.md](CAMBIOS
 
 Todos los scripts de apoyo están en Python para que funcionen igual en Windows, macOS y Linux. Se ejecutan desde la raíz del repositorio.
 
+### Preparar la terminal
+
+Hazlo **en cada terminal nueva**, con el nombre de tu perfil:
+
+```bash
+export AWS_PROFILE=default AWS_REGION=eu-west-1 TF_VAR_perfil=default
+```
+```powershell
+$env:AWS_PROFILE="default"; $env:AWS_REGION="eu-west-1"; $env:TF_VAR_perfil="default"
+```
+
+- **`AWS_PROFILE`** lo usan los comandos `aws`, los scripts y Docker. Sin él, scripts y Docker buscan un perfil `curso`, y fallan con `ProfileNotFound` si no existe.
+- **`AWS_REGION`** evita crear recursos en la región de tu perfil. Si esa no es `eu-west-1`, sin esta variable algunos comandos actuarían en otra región.
+- **`TF_VAR_perfil`** es el perfil de Terraform en todos los módulos. Si un `terraform.tfvars` declara `perfil`, manda ese valor.
+
+**En PowerShell, las variables se quedan en la terminal.** Tras `$env:MODO="pico"` o `$env:DURACION_MIN="3"`, las siguientes ejecuciones del generador las heredan. Para quitarlas: `Remove-Item Env:MODO, Env:DURACION_MIN`.
+
 ## Estructura
 
 ```
+├── docs/                     # estado actual, referencia técnica y cambios en las diapositivas
 ├── comun/
 │   ├── maestros.py           # datos maestros deterministas: 21 tiendas + 5 online, 4.000 clientes, 1.200 productos
 │   ├── eventos.py            # construcción de eventos: generador y backfill
@@ -103,10 +124,12 @@ Todos los scripts de apoyo están en Python para que funcionen igual en Windows,
 
 ## Orden de ejecución
 
+Primero, [prepara la terminal](#preparar-la-terminal).
+
 | Paso | Comando (desde la raíz) | Coste |
 |---|---|---|
 | 1. Base | `cd infra/base` → copia `terraform.tfvars.ejemplo` como `terraform.tfvars` y pon tu email → `terraform init && terraform apply` | Céntimos (S3) |
-| 2. Demo 1: infraestructura | `cd demo1-ingesta/infra && terraform init && terraform apply` | Céntimos (por GB en Firehose) |
+| 2. Demo 1: infraestructura | `cd demo1-ingesta/infra` → para recibir la alarma por email, copia `terraform.tfvars.ejemplo` como `terraform.tfvars` y pon tu email → `terraform init && terraform apply` | Céntimos (por GB en Firehose) |
 | 3. Demo 1 | Ver [demo1-ingesta/GUION.md](demo1-ingesta/GUION.md) | |
 | 4. Demo 2: infraestructura | `cd demo2-cdc-dms/infra && terraform init && terraform apply` (≈ 10 min) | **≈ 0,06 USD/h** mientras exista |
 | 5. Demo 2 | Ver [demo2-cdc-dms/GUION.md](demo2-cdc-dms/GUION.md) | |
@@ -133,36 +156,36 @@ La base y las demos 1, 3, 5 y 6 y el ejercicio F **se mantienen**: sin tareas ni
 - **AWS Budgets** avisa por email al 80 % y al 100 % de 10 USD al mes. Es un aviso, no un límite: no para nada.
 - **Etiquetas**: todos los recursos llevan `proyecto = curso-aws-hp`, `sesion = 1 | 2 | 3` y `demo = base | demo1 | demo2 | demo3 | demo4 | lakeformation | demo5 | demo6 | ejercicio-f | ejercicio-g`. Para listarlos:
   ```bash
-  aws resourcegroupstaggingapi get-resources --tag-filters Key=proyecto,Values=curso-aws-hp --profile curso --region eu-west-1
+  aws resourcegroupstaggingapi get-resources --tag-filters Key=proyecto,Values=curso-aws-hp --region eu-west-1
   ```
 
 ## Credenciales dentro de Docker
 
-El compose monta `~/.aws` en `/aws` en modo de solo lectura y usa el perfil `curso`. La imagen de la API no contiene credenciales: en la sesión 3, en ECS, las toma del task role.
+El compose monta `~/.aws` en `/aws` en modo de solo lectura y usa el perfil de `AWS_PROFILE`. La imagen de la API no contiene credenciales: en la sesión 3, en ECS, las toma del task role.
 
-**Windows (PowerShell).** `~/.aws` funciona en Docker Desktop. Para usar otro perfil: `$env:AWS_PROFILE="otro"; docker compose up --build -d`.
+**Windows (PowerShell).** `~/.aws` funciona en Docker Desktop.
 
-**IAM Identity Center (SSO).** boto3 lee el token de `~/.aws/sso/cache`, que está dentro del montaje. Haz antes `aws sso login --profile curso`. Si el token caduca durante la demo, la API responde 503 con el error de AWS: repite el login y reinicia la API con `docker compose restart api`.
+**IAM Identity Center (SSO).** boto3 lee el token de `~/.aws/sso/cache`, que está dentro del montaje. Haz antes `aws sso login`. Si el token caduca durante la demo, la API responde 503 con el error de AWS: repite el login y reinicia la API con `docker compose restart api`.
 
 **Linux con un usuario distinto de 1000** (`id -u` ≠ 1000). El contenedor corre como usuario 1000 y no puede leer `~/.aws` si los ficheros tienen permisos 600. La alternativa es pasar credenciales temporales en un `.env`:
 
 ```bash
 cd demo1-ingesta
-aws configure export-credentials --profile curso --format env-no-export > .env
+aws configure export-credentials --format env-no-export > .env
 ```
 ```powershell
 cd demo1-ingesta
-aws configure export-credentials --profile curso --format env-no-export | Out-File -Encoding ascii .env
+aws configure export-credentials --format env-no-export | Out-File -Encoding ascii .env
 ```
 
 Después, en `docker-compose.yml`, comenta `AWS_PROFILE` y descomenta `env_file: .env` en el servicio `api`. Las credenciales temporales **caducan** (normalmente en 1–12 h) y hay que regenerarlas. `.env` está en `.gitignore`.
 
 En Linux, crea también la carpeta de salida antes de arrancar (`mkdir -p salida && chmod 777 salida`) para que el generador, que corre como usuario 1000, pueda escribir `salida/resumen.json`. Si no puede, el resumen sale en el log.
 
-**Permisos para enviar a Firehose.** Si tu usuario o rol no tiene permisos sobre Firehose, adjúntale la política `api-ventas-firehose-put` que crea la demo 1 (`terraform output politica_put_arn`):
+**Permisos para enviar a Firehose.** Si tu usuario o rol no tiene permisos sobre Firehose, adjúntale la política `api-ventas-firehose-put` que crea la demo 1 (`terraform -chdir=demo1-ingesta/infra output -raw politica_put_arn`):
 
 ```bash
-aws iam attach-user-policy --user-name <tu-usuario> --policy-arn <arn> --profile curso
+aws iam attach-user-policy --user-name <tu-usuario> --policy-arn <arn>
 ```
 
 ## Desarrollo

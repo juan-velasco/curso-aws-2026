@@ -4,7 +4,7 @@
 **Duración:** ~45 min.
 **Coste:** por debajo de 1 USD. Estimaciones, sin factura: space `ml.t3.medium` ~0,05 USD/h (2 h, ~0,10 USD), UNLOAD y COPY, unos céntimos de Redshift. Ruta opcional: 58 s facturados de `ml.m5.large` en Spot y un batch transform de minutos, unos céntimos.
 
-**Nunca se crea un endpoint.** Todos los comandos se lanzan desde la **raíz del repositorio**. Requisito: demo 4 con gold cargado.
+**Nunca se crea un endpoint.** **En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)). Todos los comandos se lanzan desde la **raíz del repositorio**. Requisito: demo 4 con gold cargado.
 
 > **Probado** el 01-11-2026 contra AWS, en un space `ml.t3.medium`, **creado por API y ejecutando las celdas por la API de Jupyter**. **Sin probar:** crear el space y subir el notebook desde la consola, el apagado a los 60 min y el visual de QuickSight.
 
@@ -37,7 +37,7 @@ Clima inventado: 755 filas, de 2026-07-02 a 2026-11-29, en s3://.../ml/clima/cli
 
 Con Amazon Quick activa, añade `quicksight_activo = true` y `quicksight_usuario_arn` a `terraform.tfvars` y repite `terraform apply`. El dataset exige que la vista ya exista.
 
-**Prepara el visual antes de clase** ([paso 6](#6-visual-de-real-frente-a-previsto-y-parar-el-space-≈-10-min)).
+**Prepara el visual antes de clase** ([paso 6](#6-visual-de-real-frente-a-previsto-y-parar-el-space--10-min)).
 
 ---
 

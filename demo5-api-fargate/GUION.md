@@ -4,7 +4,11 @@
 **Duración:** ~30 min, 3 a 10 de ellos con el generador en marcha.
 **Coste:** céntimos. Fargate ARM64 con 0,25 vCPU y 0,5 GB cuesta unos 0,01 USD/h (estimación, sin factura); 30 minutos, menos de 1 céntimo, más CloudWatch Logs y Firehose. La imagen ocupa 71 MB en ECR, ~0,01 USD/mes. **Sin tareas, no hay coste de cómputo.**
 
+**En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)). **Aquí es imprescindible:** estos comandos `aws` no indican región, y sin `AWS_REGION` crearían el repositorio y el cluster en la región de tu perfil.
+
 Todos los comandos se lanzan desde la **raíz del repositorio**. Requisitos: `infra/base` y `demo1-ingesta/infra` aplicados, y Docker con `buildx`.
+
+**Para repetir la demo desde cero:** `create-repository` y `create-service` fallan si ya existen. Lanza antes `python demo5-api-fargate/scripts/limpiar_demo5.py --todo`, o sube el service con `aws ecs update-service --cluster hp-retail --service api-ventas --desired-count 1` y sigue en el paso 4.
 
 ---
 

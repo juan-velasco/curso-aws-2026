@@ -2,9 +2,9 @@
 
 **Flujo:** generador → API de ventas (FastAPI en Docker) → Amazon Data Firehose `hp-retail-ventas` → S3 `bronze/ventas/anio=AAAA/mes=MM/dia=DD/`
 **Duración:** ~25 min (10 de ellos con el generador en marcha mientras se explica).
-**Antes de clase:** perfil `curso` operativo (`aws sts get-caller-identity --profile curso`), Docker Desktop arrancado, imágenes construidas una vez (`docker compose build`) y entorno de Python con `requirements.txt` activado.
+**Antes de clase:** perfil de AWS operativo (`aws sts get-caller-identity`), Docker Desktop arrancado, imágenes construidas una vez (`docker compose build`) y entorno de Python con `requirements.txt` activado.
 
-Todos los comandos se lanzan desde la **raíz del repositorio**, salvo que se indique otra cosa.
+**En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)). Todos los comandos se lanzan desde la **raíz del repositorio**, salvo que se indique otra cosa.
 
 ---
 
@@ -18,18 +18,20 @@ cp terraform.tfvars.ejemplo terraform.tfvars        # PowerShell: Copy-Item terr
 # editar terraform.tfvars: email_alertas = "..."
 terraform init && terraform apply
 cd ../../demo1-ingesta/infra
+cp terraform.tfvars.ejemplo terraform.tfvars        # PowerShell: Copy-Item terraform.tfvars.ejemplo terraform.tfvars
+# editar terraform.tfvars y descomentar email_alertas: sin él, la alarma no avisa por email
 terraform init && terraform apply
 cd ../..
 ```
 
-**Salida esperada:** `Apply complete! Resources: 6 added` (base) y `Resources: 9 added` (demo 1), y después los outputs:
+**Salida esperada:** `Apply complete! Resources: 6 added` (base) y `Resources: 9 added` (demo 1 con email; 7 sin él), y después los outputs:
 
 ```
 bucket_name = "retail-company-datalake-prod-123456789012"
 stream_name = "hp-retail-ventas"
 ```
 
-Llegarán dos emails: la confirmación de la suscripción SNS de la alarma (hay que pulsar *Confirm subscription*) y nada más hasta que salte el presupuesto.
+Con el email de la demo 1 llega la confirmación de la suscripción SNS de la alarma: hay que pulsar *Confirm subscription*. El presupuesto de la base no envía nada hasta que salta.
 
 **Qué contar:** prefijo con la fecha de **llegada** (`!{timestamp}`), no la de negocio; buffer de 30 s o 5 MiB; GZIP con extensión `.json.gz`; sin Lambda ni conversión de formato, porque bronze es una copia fiel.
 
@@ -50,7 +52,7 @@ docker compose ps
 
 **Si falla:**
 - La API se reinicia con `RuntimeError: Falta la región`: falta `AWS_REGION` en el compose.
-- `ProfileNotFound: The config profile (curso) could not be found`: el perfil no existe en `~/.aws`. Para otro perfil: `AWS_PROFILE=otro docker compose up -d` (PowerShell: `$env:AWS_PROFILE="otro"; docker compose up -d`).
+- `ProfileNotFound: The config profile (curso) could not be found`: falta `AWS_PROFILE` en esta terminal, y se usa `curso` por defecto ([cómo definirlo](../README.md#preparar-la-terminal)). Después, repite `docker compose up -d`.
 - Linux con un usuario distinto de 1000, o SSO que no funciona: usa la alternativa del `.env` (ver README).
 
 ## 3. Generar 10 minutos de ventas en hora pico (≈ 10 min, en segundo plano)
@@ -77,7 +79,7 @@ Al terminar escribe `demo1-ingesta/salida/resumen.json`. `Ctrl+C` solo sale de l
 **Variantes:** `DURACION_MIN=2` para una ejecución corta. `DUPLICADOS_PCT=5` reenvía un 5 % de los eventos con el mismo `event_id` (sirve en la sesión 2 para enseñar a desduplicar). `INVALIDOS_PCT=2` envía eventos inválidos, que la API debe rechazar con 422.
 
 **Si falla:**
-- `La API respondió 503: Error enviando a Firehose: … ExpiredToken`: las credenciales han caducado. Haz `aws sso login --profile curso` (o regenera el `.env`) y luego `docker compose restart api`.
+- `La API respondió 503: Error enviando a Firehose: … ExpiredToken`: las credenciales han caducado. Haz `aws sso login` (o regenera el `.env`) y luego `docker compose restart api`.
 - `AccessDeniedException … firehose:PutRecordBatch`: adjunta la política `api-ventas-firehose-put` a tu usuario (ver README).
 
 ## 4. Seguir las métricas del stream en CloudWatch (≈ 3 min)
@@ -91,26 +93,26 @@ Consola: **Amazon Data Firehose → hp-retail-ventas → Monitoring**. Las métr
 Desde la terminal:
 
 ```bash
-aws cloudwatch describe-alarms --alarm-names hp-retail-ventas-data-freshness --query "MetricAlarms[0].StateValue" --profile curso --region eu-west-1
+aws cloudwatch describe-alarms --alarm-names hp-retail-ventas-data-freshness --query "MetricAlarms[0].StateValue" --region eu-west-1
 ```
 
 ## 5. Explorar bronze en S3: un fichero gzip cada 30 s con JSON Lines (≈ 4 min)
 
 ```bash
 BUCKET=$(terraform -chdir=infra/base output -raw bucket_name)
-aws s3 ls s3://$BUCKET/bronze/ventas/ --recursive --profile curso | tail -5
-FICHERO=$(aws s3 ls s3://$BUCKET/bronze/ventas/ --recursive --profile curso | tail -1 | awk '{print $4}')
-aws s3 cp s3://$BUCKET/$FICHERO - --profile curso | gunzip | head -3 | jq .
+aws s3 ls s3://$BUCKET/bronze/ventas/ --recursive | tail -5
+FICHERO=$(aws s3 ls s3://$BUCKET/bronze/ventas/ --recursive | tail -1 | awk '{print $4}')
+aws s3 cp s3://$BUCKET/$FICHERO - | gunzip | head -3 | jq .
 ```
 ```powershell
 $BUCKET = terraform -chdir=infra/base output -raw bucket_name
-aws s3 ls s3://$BUCKET/bronze/ventas/ --recursive --profile curso | Select-Object -Last 5
+aws s3 ls s3://$BUCKET/bronze/ventas/ --recursive | Select-Object -Last 5
 ```
 
 En Windows (y en general), el script hace lo mismo sin `gunzip`, `head` ni `jq`, y además revisa los criterios de aceptación:
 
 ```bash
-python demo1-ingesta/scripts/comprobar_bronze.py          # --fecha 2026-10-24 para otro día
+python demo1-ingesta/scripts/comprobar_bronze.py          # --fecha 2026-10-24 para otro día: sin comparar con el generador
 ```
 
 **Salida esperada:**

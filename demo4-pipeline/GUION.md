@@ -3,7 +3,7 @@
 **Flujo:** bronze → Glue Jobs (silver en Iceberg, SCD2, Data Quality) → Redshift Serverless (gold) → QuickSight, orquestado con Step Functions.
 **Duración:** ~40 min en clase, 11 de ellos con el generador en marcha. La preparación tarda ~30 min y **se hace antes de clase**: crear el workgroup y el primer job llevan varios minutos.
 
-Todos los comandos se lanzan desde la **raíz del repositorio**. Requisito: demo 3 aplicada y `bronze.ventas` creada.
+**En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)). Todos los comandos se lanzan desde la **raíz del repositorio**. Requisito: demo 3 aplicada y `bronze.ventas` creada.
 
 ---
 

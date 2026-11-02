@@ -10,7 +10,7 @@ services:
       AWS_CONFIG_FILE: /aws/config                # necesario para perfiles con SSO o región
     volumes: ["~/.aws:/aws:ro"]
     # Alternativa (Linux con usuario distinto de 1000, o SSO que no funcione):
-    # genera .env con `aws configure export-credentials --profile curso --format env-no-export`,
+    # genera .env con `aws configure export-credentials --format env-no-export`,
     # comenta AWS_PROFILE y descomenta la línea siguiente. Ver README.
     # env_file: .env
     healthcheck:

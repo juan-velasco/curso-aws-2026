@@ -46,6 +46,11 @@ def listar(s3, bucket: str, prefijo: str) -> list[dict]:
     return sorted(objetos, key=lambda o: o["Key"])
 
 
+def resumen_de_la_fecha(resumen: dict, fecha: datetime) -> bool:
+    """El resumen solo es comparable con el día en que corrió el generador."""
+    return parse_ts(resumen["inicio"]).date() <= fecha.date() <= parse_ts(resumen["fin"]).date()
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--fecha", help="fecha de llegada AAAA-MM-DD (por defecto, hoy en UTC)")
@@ -73,6 +78,9 @@ def main() -> None:
     resumen = json.loads(RESUMEN.read_text(encoding="utf-8")) if RESUMEN.exists() else None
     if resumen is None:
         print(f"\nAviso: no existe {RESUMEN}; no se puede comparar con el generador.")
+    elif not resumen_de_la_fecha(resumen, fecha):
+        print(f"\nAviso: {RESUMEN.name} es de otra fecha ({resumen['inicio']}); no se compara con el generador.")
+        resumen = None
 
     eventos, mal_formados, ultimo = [], [], []
     for o in objetos:

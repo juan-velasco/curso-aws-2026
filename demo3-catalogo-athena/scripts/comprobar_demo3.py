@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from comun import athena  # noqa: E402
 from comun.terraform import outputs  # noqa: E402
 
-# Tipos esperados según el esquema real de DMS (ESTADO_SESION1.md §4.2)
+# Tipos esperados según el esquema real de DMS (docs/REFERENCIA.md)
 TIPOS_CLIENTES = {
     "op": "string",
     "ts_commit": "string",

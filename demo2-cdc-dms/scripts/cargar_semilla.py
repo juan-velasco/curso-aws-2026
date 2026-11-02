@@ -40,7 +40,7 @@ def main() -> None:
         print(f"wal_level = {wal_level}")
         if wal_level != "logical":
             print("AVISO: wal_level no es 'logical'. Reinicia la instancia para aplicar el parameter group:\n"
-                  "  aws rds reboot-db-instance --db-instance-identifier curso-aws-hp-retail --profile curso")
+                  "  aws rds reboot-db-instance --db-instance-identifier curso-aws-hp-retail")
 
         cur.execute((SQL / "01_esquema.sql").read_text(encoding="utf-8"))
         print("Esquema creado (clientes, productos)")

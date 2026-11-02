@@ -4,6 +4,8 @@ Los alumnos lo montan **a mano**. Este repositorio es la solución de referencia
 
 **Terminado cuando** la misma URL da **401 sin token y 200 con token**.
 
+**En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)). También hace falta para el `admin-set-user-password` del paso 3 de la consola.
+
 **Coste:** sin coste por hora; una API sin tráfico y un user pool con un usuario quedan en el nivel gratuito.
 
 | Qué | Estado (01-11-2026) |
@@ -107,7 +109,7 @@ URL=https://$API.execute-api.eu-west-1.amazonaws.com/prod/hola
 Son los comandos de arriba, en ese orden, desde la **raíz del repositorio**. Antes:
 
 ```bash
-export AWS_PROFILE=curso AWS_REGION=eu-west-1
+export AWS_PROFILE=default AWS_REGION=eu-west-1   # o el perfil que uses
 S=""                   # sufijo de los nombres: "-cli" si ya está desplegado el módulo de Terraform
 read -rs PASSWORD      # 8 caracteres, con mayúscula, minúscula, número y símbolo
 ```
@@ -117,7 +119,7 @@ read -rs PASSWORD      # 8 caracteres, con mayúscula, minúscula, número y sí
 Sin probar. Cambian las variables, las comillas y la continuación de línea:
 
 ```powershell
-$env:AWS_PROFILE="curso"; $env:AWS_REGION="eu-west-1"; $S=""
+$env:AWS_PROFILE="default"; $env:AWS_REGION="eu-west-1"; $S=""   # o el perfil que uses
 $PASSWORD = Read-Host "Contraseña" -MaskInput
 $POOL = aws cognito-idp create-user-pool --pool-name "tiendas$S" --query UserPool.Id --output text
 $CLIENT_ID = aws cognito-idp create-user-pool-client --user-pool-id $POOL --client-name "curso-hola$S" --no-generate-secret --explicit-auth-flows ALLOW_USER_PASSWORD_AUTH ALLOW_REFRESH_TOKEN_AUTH --query UserPoolClient.ClientId --output text
@@ -157,6 +159,12 @@ curl -i $URL                                                  # 401 {"message":"
 ID_TOKEN=$(aws cognito-idp initiate-auth --auth-flow USER_PASSWORD_AUTH --client-id $CLIENT_ID \
   --auth-parameters USERNAME=tienda-vlc-003,PASSWORD="$PASSWORD" --query AuthenticationResult.IdToken --output text)
 curl -i -H "Authorization: $ID_TOKEN" $URL                    # 200
+```
+```powershell
+# Sin probar
+curl.exe -i $URL
+$ID_TOKEN = aws cognito-idp initiate-auth --auth-flow USER_PASSWORD_AUTH --client-id $CLIENT_ID --auth-parameters "USERNAME=tienda-vlc-003,PASSWORD=$PASSWORD" --query AuthenticationResult.IdToken --output text
+curl.exe -i -H "Authorization: $ID_TOKEN" $URL
 ```
 
 **Decodificar el token, en local.** No lo pegues en una web de terceros: un token vigente da acceso a la API hasta que caduca. Hay dos formas, sin dependencias nuevas:

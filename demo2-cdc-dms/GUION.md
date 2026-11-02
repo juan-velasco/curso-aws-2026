@@ -5,7 +5,9 @@
 **Coste:** ≈ 0,06 USD/h mientras exista: RDS `db.t4g.micro` (0,017 USD/h), `dms.t3.small` (0,039 USD/h) y el secreto (0,40 USD/mes, prorrateado). **Se destruye al terminar.**
 **Requisitos:** `infra/base` aplicado y entorno de Python con `requirements.txt` activado.
 
-Todos los comandos se lanzan desde la **raíz del repositorio**.
+**En cada terminal nueva:** define el perfil y la región ([cómo](../README.md#preparar-la-terminal)). Todos los comandos se lanzan desde la **raíz del repositorio**.
+
+**Repetir la demo en una cuenta que ya tiene las demos 3 y 4 cambia sus resultados:** añade otra carga completa y otros cambios a `bronze/cdc/`, y las cifras y versiones que muestran sus guiones dejan de coincidir.
 
 ---
 
@@ -14,7 +16,7 @@ Todos los comandos se lanzan desde la **raíz del repositorio**.
 ```bash
 cd demo2-cdc-dms/infra
 terraform init
-terraform apply          # 30 recursos: RDS ≈ 6 min, instancia de DMS ≈ 8 min (en paralelo)
+terraform apply          # 31 recursos: RDS ≈ 6 min, instancia de DMS ≈ 8 min (en paralelo)
 cd ../..
 ```
 
@@ -56,7 +58,7 @@ Total: 4000 clientes, 1200 productos. C-17: ('Standard', 'Valencia')
 Es idempotente: si se repite, avisa y no duplica. Los datos salen de `comun/maestros.py`, igual que en el generador de la demo 1.
 
 **Si falla:**
-- `wal_level = replica` (con AVISO): reinicia la instancia con `aws rds reboot-db-instance --db-instance-identifier curso-aws-hp-retail --profile curso --region eu-west-1`, espera a `available` y repite.
+- `wal_level = replica` (con AVISO): reinicia la instancia con `aws rds reboot-db-instance --db-instance-identifier curso-aws-hp-retail --region eu-west-1`, espera a `available` y repite.
 - `connection timeout`: tu IP ha cambiado (wifi distinta). Haz `terraform apply` en `demo2-cdc-dms/infra` para actualizar el security group.
 
 ## 3. Endpoints con el secreto de Secrets Manager y prueba de conexión (≈ 3 min)
@@ -166,7 +168,7 @@ terraform destroy                                       # ≈ 10 min
 Comprobación de que no queda nada de la demo 2:
 
 ```bash
-aws resourcegroupstaggingapi get-resources --tag-filters Key=demo,Values=demo2 --profile curso --region eu-west-1 --query "ResourceTagMappingList[].ResourceARN"
+aws resourcegroupstaggingapi get-resources --tag-filters Key=demo,Values=demo2 --region eu-west-1 --query "ResourceTagMappingList[].ResourceARN"
 ```
 
 Si `terraform destroy` falla en la instancia de replicación porque la tarea está en marcha, ejecuta `tarea_dms.py parar` y repite.
